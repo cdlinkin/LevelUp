@@ -11,11 +11,10 @@ env-down:
 
 env-cleanup:
 		docker compose down todoapp-postgres port-forwarder && \
-		powershell -Command "Remove-Item -Recurse -Force out/pgdata" && \
+		powershell -Command "Remove-Item -Recurse -Force ${PROJECT_ROOT}out/pgdata" && \
 		echo "Файлы окружения очищены"; \
 
 env-port-forward:
-	-net stop postgresql-x64-18
 	docker compose up -d port-forwarder
 
 env-port-close:
@@ -48,4 +47,4 @@ levelup-run:
 	set POSTGRES_HOST=localhost&& \
 	set LOGGER_FOLDER=./out/logs&& \
 	go mod tidy && \
-	go run cmd/levelup/main.go
+	go run ${PROJECT_ROOT}cmd/levelup/main.go
