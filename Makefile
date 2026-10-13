@@ -47,4 +47,4 @@ levelup-run:
 	set POSTGRES_HOST=localhost&& \
 	set LOGGER_FOLDER=./out/logs&& \
 	go mod tidy && \
-	go run ${PROJECT_ROOT}cmd/levelup/main.go
+	go run cmd/levelup/main.go
