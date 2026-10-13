@@ -43,8 +43,12 @@ ifndef action
 endif
 	docker compose run --rm todoapp-postgres-migrate -path /migrations -database postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@todoapp-postgres:5432/$(POSTGRES_DB)?sslmode=disable $(action)
 
+logs-cleanup:
+	powershell -NoProfile -Command "if (Test-Path '$(PROJECT_ROOT)/out/logs') { Remove-Item -Recurse -Force '$(PROJECT_ROOT)/out/logs' }"
+	@echo logs cleaned
+
 levelup-run:
 	set POSTGRES_HOST=localhost&& \
 	set LOGGER_FOLDER=./out/logs&& \
 	go mod tidy && \
-	go run ${PROJECT_ROOT}cmd/levelup/main.go
+	go run cmd/levelup/main.go
