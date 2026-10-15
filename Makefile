@@ -62,5 +62,13 @@ levelup-undeploy:
 ps: 
 	docker compose ps
 
+swagger-gen:
+	docker compose run --rm swagger \
+		init \
+		-g cmd/levelup/main.go \
+		-o docs \
+		--parseInternal \
+		--parseDependency
+
 compose-check:
 	docker compose config --quiet
