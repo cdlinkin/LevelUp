@@ -56,6 +56,9 @@ levelup-run:
 levelup-deploy:
 	docker compose up -d --build levelup
 
+levelup-undeploy:
+	docker compose down levelup
+
 ps: 
 	docker compose ps
 
