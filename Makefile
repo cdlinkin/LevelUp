@@ -52,3 +52,15 @@ levelup-run:
 	set LOGGER_FOLDER=./out/logs&& \
 	go mod tidy && \
 	go run cmd/levelup/main.go
+
+levelup-deploy:
+	docker compose up -d --build levelup
+
+levelup-undeploy:
+	docker compose down levelup
+
+ps: 
+	docker compose ps
+
+compose-check:
+	docker compose config --quiet
