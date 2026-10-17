@@ -31,7 +31,7 @@ func (r *TasksRepository) GetTasks(
 		query = fmt.Sprintf(query, "WHERE author_user_id=$3")
 		args = append(args, userID)
 	} else {
-		query = fmt.Sprint(query, "")
+		query = fmt.Sprintf(query, "")
 	}
 
 	rows, err := r.pool.Query(
