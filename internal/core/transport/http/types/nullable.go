@@ -20,7 +20,7 @@ func (n *Nullable[T]) UnmarshalJSON(b []byte) error {
 	}
 
 	var value T
-	if err := json.Unmarshal(b, *&value); err != nil {
+	if err := json.Unmarshal(b, &value); err != nil {
 		return err
 	}
 
