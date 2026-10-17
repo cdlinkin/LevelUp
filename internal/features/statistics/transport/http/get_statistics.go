@@ -91,7 +91,7 @@ func getUserIDFromToQueryParams(r *http.Request) (*int, *time.Time, *time.Time, 
 		return nil, nil, nil, fmt.Errorf("get 'from' query param: %w", err)
 	}
 
-	to, err := core_http_request.GetDateQueryParam(r, fromQueryParamKey)
+	to, err := core_http_request.GetDateQueryParam(r, toQueryParamKey)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("get 'to' query param: %w", err)
 	}
