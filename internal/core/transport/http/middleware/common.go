@@ -23,7 +23,7 @@ func CORS(allowedOriginsList []string) Middleware {
 			origin := r.Header.Get("Origin")
 
 			if _, ok := allowedOrigins[origin]; ok {
-				w.Header().Set("Access-Control-Allow-Orgin", origin)
+				w.Header().Set("Access-Control-Allow-Origin", origin)
 				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
 				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 			}
