@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	core_auth "github.com/cdlinkin/LevelUp/internal/core/auth"
 	"github.com/cdlinkin/LevelUp/internal/core/domain"
 	core_logger "github.com/cdlinkin/LevelUp/internal/core/logger"
 	tasks_transport_http "github.com/cdlinkin/LevelUp/internal/features/tasks/transport/http"
@@ -32,15 +33,15 @@ func (f *fakeTasksService) GetTasks(ctx context.Context, userID *int, limit *int
 	return f.getTasksResult, nil
 }
 
-func (f *fakeTasksService) GetTask(ctx context.Context, id int) (domain.Task, error) {
+func (f *fakeTasksService) GetTask(ctx context.Context, userID int, id int) (domain.Task, error) {
 	return domain.Task{}, nil
 }
 
-func (f *fakeTasksService) DeleteTask(ctx context.Context, id int) error {
+func (f *fakeTasksService) DeleteTask(ctx context.Context, userID int, id int) error {
 	return nil
 }
 
-func (f *fakeTasksService) PatchTask(ctx context.Context, id int, patch domain.TaskPatch) (domain.Task, error) {
+func (f *fakeTasksService) PatchTask(ctx context.Context, userID int, id int, patch domain.TaskPatch) (domain.Task, error) {
 	return domain.Task{}, nil
 }
 
@@ -58,7 +59,19 @@ func newTestRouter(service tasks_transport_http.TasksService) http.Handler {
 	return mux
 }
 
-func newRequest(method, target string) *http.Request {
+func newRequest(method, target string, userID int) *http.Request {
+	r := httptest.NewRequest(method, target, nil)
+	log := &core_logger.Logger{
+		Logger: zap.NewNop(),
+	}
+
+	ctx := core_logger.ToContext(r.Context(), log)
+	ctx = core_auth.ToContext(ctx, userID)
+
+	return r.WithContext(ctx)
+}
+
+func newAnonymousRequest(method, target string) *http.Request {
 	r := httptest.NewRequest(method, target, nil)
 	log := &core_logger.Logger{
 		Logger: zap.NewNop(),
@@ -85,11 +98,11 @@ func TestGetTasks_QueryParams(t *testing.T) {
 		wantOffset any
 	}{
 		{
-			name:       "all params",
+			name:       "user_id from token, query user_id ignored",
 			target:     "/tasks?user_id=1&limit=10&offset=5",
 			wantStatus: http.StatusOK,
 			wantCalled: true,
-			wantUserID: 1,
+			wantUserID: 7,
 			wantLimit:  10,
 			wantOffset: 5,
 		},
@@ -98,13 +111,13 @@ func TestGetTasks_QueryParams(t *testing.T) {
 			target:     "/tasks",
 			wantStatus: http.StatusOK,
 			wantCalled: true,
-			wantUserID: nil,
+			wantUserID: 7,
 			wantLimit:  nil,
 			wantOffset: nil,
 		},
 		{
-			name:       "user_id is not a number",
-			target:     "/tasks?user_id=abc",
+			name:       "limit is not a number",
+			target:     "/tasks?limit=abc",
 			wantStatus: http.StatusBadRequest,
 			wantCalled: false,
 		},
@@ -116,7 +129,7 @@ func TestGetTasks_QueryParams(t *testing.T) {
 			router := newTestRouter(service)
 
 			rec := httptest.NewRecorder()
-			router.ServeHTTP(rec, newRequest(http.MethodGet, tt.target))
+			router.ServeHTTP(rec, newRequest(http.MethodGet, tt.target, 7))
 
 			if rec.Code != tt.wantStatus {
 				t.Fatalf("status = %d, want %d, body: %s", rec.Code, tt.wantStatus, rec.Body.String())
@@ -141,6 +154,21 @@ func TestGetTasks_QueryParams(t *testing.T) {
 	}
 }
 
+func TestGetTasks_Anonymous(t *testing.T) {
+	service := &fakeTasksService{}
+	router := newTestRouter(service)
+
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, newAnonymousRequest(http.MethodGet, "/tasks"))
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want %d, body: %s", rec.Code, http.StatusUnauthorized, rec.Body.String())
+	}
+	if service.getTasksCalled {
+		t.Errorf("service GetTasks was called without user, want not called")
+	}
+}
+
 func TestGetTasks_ResponseBody(t *testing.T) {
 	service := &fakeTasksService{
 		getTasksResult: []domain.Task{
@@ -154,7 +182,7 @@ func TestGetTasks_ResponseBody(t *testing.T) {
 	router := newTestRouter(service)
 
 	rec := httptest.NewRecorder()
-	router.ServeHTTP(rec, newRequest(http.MethodGet, "/tasks"))
+	router.ServeHTTP(rec, newRequest(http.MethodGet, "/tasks", 1))
 
 	if ct := rec.Header().Get("Content-Type"); ct != "application/json; charset=utf-8" {
 		t.Errorf("Content-Type = %q, want %q", ct, "application/json; charset=utf-8")

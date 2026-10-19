@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	core_auth "github.com/cdlinkin/LevelUp/internal/core/auth"
 	"github.com/cdlinkin/LevelUp/internal/core/domain"
 	core_logger "github.com/cdlinkin/LevelUp/internal/core/logger"
 	statistics_transport_http "github.com/cdlinkin/LevelUp/internal/features/statistics/transport/http"
@@ -45,7 +46,19 @@ func newTestRouter(service statistics_transport_http.StatisticsService) http.Han
 	return mux
 }
 
-func newRequest(method, target string) *http.Request {
+func newRequest(method, target string, userID int) *http.Request {
+	r := httptest.NewRequest(method, target, nil)
+	log := &core_logger.Logger{
+		Logger: zap.NewNop(),
+	}
+
+	ctx := core_logger.ToContext(r.Context(), log)
+	ctx = core_auth.ToContext(ctx, userID)
+
+	return r.WithContext(ctx)
+}
+
+func newAnonymousRequest(method, target string) *http.Request {
 	r := httptest.NewRequest(method, target, nil)
 	log := &core_logger.Logger{
 		Logger: zap.NewNop(),
@@ -121,7 +134,7 @@ func TestGetStatistics_QueryParams(t *testing.T) {
 			router := newTestRouter(service)
 
 			rec := httptest.NewRecorder()
-			router.ServeHTTP(rec, newRequest(http.MethodGet, tt.target))
+			router.ServeHTTP(rec, newRequest(http.MethodGet, tt.target, 7))
 
 			if rec.Code != tt.wantStatus {
 				t.Fatalf("status = %d, want %d, body: %s", rec.Code, tt.wantStatus, rec.Body.String())
@@ -139,17 +152,32 @@ func TestGetStatistics_QueryParams(t *testing.T) {
 	}
 }
 
-func TestGetStatistics_UserID(t *testing.T) {
+func TestGetStatistics_UserIDFromToken(t *testing.T) {
 	service := &fakeStatisticsService{}
 	router := newTestRouter(service)
 
 	rec := httptest.NewRecorder()
-	router.ServeHTTP(rec, newRequest(http.MethodGet, "/statistics?user_id=3"))
+	router.ServeHTTP(rec, newRequest(http.MethodGet, "/statistics?user_id=3", 7))
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
 	}
-	if service.gotUserID == nil || *service.gotUserID != 3 {
-		t.Errorf("userID = %v, want 3", service.gotUserID)
+	if service.gotUserID == nil || *service.gotUserID != 7 {
+		t.Errorf("userID = %v, want 7", service.gotUserID)
+	}
+}
+
+func TestGetStatistics_Anonymous(t *testing.T) {
+	service := &fakeStatisticsService{}
+	router := newTestRouter(service)
+
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, newAnonymousRequest(http.MethodGet, "/statistics"))
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want %d, body: %s", rec.Code, http.StatusUnauthorized, rec.Body.String())
+	}
+	if service.called {
+		t.Errorf("service GetStatistics was called without user, want not called")
 	}
 }
