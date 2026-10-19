@@ -49,6 +49,7 @@ services:
     command: tcp-listen:5432,fork,reuseaddr tcp-connect:todoapp-postgres:5432
     ports:
       - "127.0.0.1:9998:5432"
+    restart: always
 
   swagger:
     build:

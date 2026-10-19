@@ -38,7 +38,7 @@ help:
 	@echo   ps                 list project containers
 
 env-up:
-	docker compose up -d todoapp-postgres
+	docker compose up -d todoapp-postgres port-forwarder
 
 env-down:
 	docker compose down todoapp-postgres
