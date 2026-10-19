@@ -14,12 +14,14 @@ type GetUserResponse UserDTOResponse
 
 // GetUser 			godoc
 // @Summary 		Получение пользователя
-// @Description 	Получение конкретного пользователя по его ID
+// @Description 	Получение пользователя по ID. Доступно только для своего ID, иначе 403.
 // @Tags 			users
 // @Produce 		json
+// @Security 		BearerAuth
 // @Param 			id path int true							  "ID получаемого пользователя"
 // @Success 		200 {object} GetUserResponse 				  "Пользователь успешно найден"
 // @Failure 		400 {object} core_http_response.ErrorResponse "Bad request"
+// @Failure 		401 {object} core_http_response.ErrorResponse "Unauthorized"
 // @Failure 		403 {object} core_http_response.ErrorResponse "Forbidden"
 // @Failure 		404 {object} core_http_response.ErrorResponse "User not found"
 // @Failure 		500 {object} core_http_response.ErrorResponse "Internal server error"

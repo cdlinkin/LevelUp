@@ -20,14 +20,15 @@ type CreateTaskResponse TaskDTOResponse
 
 // CreateTask godoc
 // @Summary      Создать задачу
-// @Description  Создать новую задачу в системе.
+// @Description  Создать новую задачу. Автором становится пользователь из access token.
 // @Tags         tasks
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 // @Param        request body CreateTaskRequest true "CreateTask тело запроса"
 // @Success      201 {object} CreateTaskResponse "Успешно созданная задача"
 // @Failure      400 {object} core_http_response.ErrorResponse "Bad request"
-// @Failure      404 {object} core_http_response.ErrorResponse "Author not found"
+// @Failure      401 {object} core_http_response.ErrorResponse "Unauthorized"
 // @Failure      500 {object} core_http_response.ErrorResponse "Internal server error"
 // @Router       /tasks [post]
 func (h *TasksHTTPHandler) CreateTask(rw http.ResponseWriter, r *http.Request) {

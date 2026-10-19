@@ -8,6 +8,20 @@ import (
 	core_http_response "github.com/cdlinkin/LevelUp/internal/core/transport/http/response"
 )
 
+// Login 			godoc
+// @Summary 		Вход в систему
+// @Description 	Проверяет email и пароль, возвращает JWT access token.
+// @Description 	Токен передаётся в остальные запросы заголовком `Authorization: Bearer <access_token>`.
+// @Description 	На неизвестный email и неверный пароль ответ одинаковый: 401.
+// @Tags 			auth
+// @Accept 			json
+// @Produce 		json
+// @Param 			request body LoginRequest true "Login тело запроса"
+// @Success 		200 {object} LoginResponse "Успешный вход"
+// @Failure 		400 {object} core_http_response.ErrorResponse "Bad request"
+// @Failure 		401 {object} core_http_response.ErrorResponse "Invalid email or password"
+// @Failure 		500 {object} core_http_response.ErrorResponse "Internal server error"
+// @Router 			/auth/login [post]
 func (h *AuthHTTPHandler) Login(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

@@ -38,6 +38,11 @@ import (
 // @description 	Todo Application REST-API scheme
 // @host 			127.0.0.1:5050
 // @BasePath 		/api/v1
+//
+// @securityDefinitions.apikey	BearerAuth
+// @in							header
+// @name						Authorization
+// @description					JWT access token из POST /auth/login. Формат: `Bearer <access_token>`
 func main() {
 	cfg := core_config.NewConfigMust()
 	time.Local = cfg.TimeZone

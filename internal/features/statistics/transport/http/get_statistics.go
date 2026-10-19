@@ -22,13 +22,15 @@ type GetStatisticsResponse struct {
 
 // GetStatistics godoc
 // @Summary Получение статистики
-// @Description Получение статистики по задачам с опциональной фильтрацией по user_id и/или временному промежутку
+// @Description Статистика по задачам текущего пользователя с опциональной фильтрацией по временному промежутку
 // @Tags statistics
 // @Produce json
+// @Security BearerAuth
 // @Param from query string false "Начало промежутка рассмотрения статистики (включительно), формат: YYYY-MM-DD"
 // @Param to query string false "Конец промежутка рассмотрения статистики (не включительно), формат: YYYY-MM-DD"
 // @Success 200 {object} GetStatisticsResponse "Успешное получение статистики"
 // @Failure 400 {object} core_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_http_response.ErrorResponse "Unauthorized"
 // @Failure 500 {object} core_http_response.ErrorResponse "Internal server error"
 // @Router /statistics [get]
 func (h *StatisticsHTTPHandler) GetStatistics(rw http.ResponseWriter, r *http.Request) {

@@ -8,6 +8,20 @@ import (
 	core_http_response "github.com/cdlinkin/LevelUp/internal/core/transport/http/response"
 )
 
+// Register 		godoc
+// @Summary 		Регистрация пользователя
+// @Description 	Создаёт пользователя с email и паролем.
+// @Description 	Email приводится к нижнему регистру, пароль хранится только в виде bcrypt-хеша.
+// @Description 	Ограничения: пароль от 8 до 72 байт, `full_name` от 3 до 100 символов.
+// @Tags 			auth
+// @Accept 			json
+// @Produce 		json
+// @Param 			request body RegisterRequest true "Register тело запроса"
+// @Success 		201 {object} RegisterResponse "Пользователь зарегистрирован"
+// @Failure 		400 {object} core_http_response.ErrorResponse "Bad request"
+// @Failure 		409 {object} core_http_response.ErrorResponse "Email already exists"
+// @Failure 		500 {object} core_http_response.ErrorResponse "Internal server error"
+// @Router 			/auth/register [post]
 func (h *AuthHTTPHandler) Register(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

@@ -15,9 +15,155 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/auth/login": {
+            "post": {
+                "description": "Проверяет email и пароль, возвращает JWT access token.\nТокен передаётся в остальные запросы заголовком ` + "`" + `Authorization: Bearer \u003caccess_token\u003e` + "`" + `.\nНа неизвестный email и неверный пароль ответ одинаковый: 401.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Вход в систему",
+                "parameters": [
+                    {
+                        "description": "Login тело запроса",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_features_auth_transport_http.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешный вход",
+                        "schema": {
+                            "$ref": "#/definitions/internal_features_auth_transport_http.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid email or password",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает пользователя, которому принадлежит access token",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Текущий пользователь",
+                "responses": {
+                    "200": {
+                        "description": "Текущий пользователь",
+                        "schema": {
+                            "$ref": "#/definitions/internal_features_auth_transport_http.RegisterResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "description": "Создаёт пользователя с email и паролем.\nEmail приводится к нижнему регистру, пароль хранится только в виде bcrypt-хеша.\nОграничения: пароль от 8 до 72 байт, ` + "`" + `full_name` + "`" + ` от 3 до 100 символов.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Регистрация пользователя",
+                "parameters": [
+                    {
+                        "description": "Register тело запроса",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_features_auth_transport_http.RegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Пользователь зарегистрирован",
+                        "schema": {
+                            "$ref": "#/definitions/internal_features_auth_transport_http.RegisterResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Email already exists",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/statistics": {
             "get": {
-                "description": "Получение статистики по задачам с опциональной фильтрацией по user_id и/или временному промежутку",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Статистика по задачам текущего пользователя с опциональной фильтрацией по временному промежутку",
                 "produces": [
                     "application/json"
                 ],
@@ -26,12 +172,6 @@ const docTemplate = `{
                 ],
                 "summary": "Получение статистики",
                 "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Фильтрация статистики по конкретному пользователю",
-                        "name": "user_id",
-                        "in": "query"
-                    },
                     {
                         "type": "string",
                         "description": "Начало промежутка рассмотрения статистики (включительно), формат: YYYY-MM-DD",
@@ -58,6 +198,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -69,7 +215,12 @@ const docTemplate = `{
         },
         "/tasks": {
             "get": {
-                "description": "Просмотр списка задач с опциональной пагинацией и/или фильтрацией по ID автора задачи",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Список задач текущего пользователя с опциональной пагинацией",
                 "produces": [
                     "application/json"
                 ],
@@ -78,12 +229,6 @@ const docTemplate = `{
                 ],
                 "summary": "Список задач",
                 "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Фильтрация задач по ID автора",
-                        "name": "user_id",
-                        "in": "query"
-                    },
                     {
                         "type": "integer",
                         "description": "Размер страницы с задачами",
@@ -113,6 +258,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -122,7 +273,12 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Создать новую задачу в системе.",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Создать новую задачу. Автором становится пользователь из access token.",
                 "consumes": [
                     "application/json"
                 ],
@@ -157,8 +313,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
                         }
                     },
-                    "404": {
-                        "description": "Author not found",
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
                         }
@@ -174,7 +330,12 @@ const docTemplate = `{
         },
         "/tasks/{id}": {
             "get": {
-                "description": "Получение конкретной задачи по её ID",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Получение задачи текущего пользователя по её ID. Чужая задача возвращает 404.",
                 "produces": [
                     "application/json"
                 ],
@@ -204,6 +365,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Task not found",
                         "schema": {
@@ -219,7 +386,12 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Удалить существующую в системе задачу по её ID",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Удалить задачу текущего пользователя по её ID. Чужая задача возвращает 404.",
                 "tags": [
                     "tasks"
                 ],
@@ -243,6 +415,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Task not found",
                         "schema": {
@@ -258,7 +436,12 @@ const docTemplate = `{
                 }
             },
             "patch": {
-                "description": "Обновляет информацию об уже существующей в системе задаче\n### Логика обновления полей (Three-state logic):\n1. **Поле не передано**: ` + "`" + `description` + "`" + ` игнорируется, значение в БД не меняется\n2. **Явно передано значение**: ` + "`" + `\"description\": \"Утром в 06:30 выйти на прогулку с Бобиком\"` + "`" + `\n3. **Явно передан null**: ` + "`" + `\"description\": null` + "`" + ` — очищает поле в БД (set to NULL)\nОграничения: ` + "`" + `title` + "`" + ` и ` + "`" + `completed` + "`" + ` не могут быть выставлены как null",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Обновляет задачу текущего пользователя. Чужая задача возвращает 404.\n### Логика обновления полей (Three-state logic):\n1. **Поле не передано**: ` + "`" + `description` + "`" + ` игнорируется, значение в БД не меняется\n2. **Явно передано значение**: ` + "`" + `\"description\": \"Утром в 06:30 выйти на прогулку с Бобиком\"` + "`" + `\n3. **Явно передан null**: ` + "`" + `\"description\": null` + "`" + ` — очищает поле в БД (set to NULL)\nОграничения: ` + "`" + `title` + "`" + ` и ` + "`" + `completed` + "`" + ` не могут быть выставлены как null",
                 "consumes": [
                     "application/json"
                 ],
@@ -300,6 +483,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Task not found",
                         "schema": {
@@ -321,102 +510,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/users": {
-            "get": {
-                "description": "Просмотр списка пользователей с опциональной пагинацией",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Список пользователей",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Размер страницы с пользователями",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Смещение страницы с ользователями",
-                        "name": "offset",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Успешное получение списка пользователей",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/internal_features_users_transport_http.UserDTOResponse"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Создать нового пользователя в системе",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Создать пользователя",
-                "parameters": [
-                    {
-                        "description": "CreateUser тело запроса",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_features_users_transport_http.CreateUserRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Успешно созданный пользователь",
-                        "schema": {
-                            "$ref": "#/definitions/internal_features_users_transport_http.CreateUserResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/users/{id}": {
             "get": {
-                "description": "Получение конкретного пользователя по его ID",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Получение пользователя по ID. Доступно только для своего ID, иначе 403.",
                 "produces": [
                     "application/json"
                 ],
@@ -446,6 +547,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "User not found",
                         "schema": {
@@ -461,7 +574,12 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Удаление существующего пользователя в системе",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Удаление своего аккаунта. Чужой ID возвращает 403, пользователь с задачами — 409.",
                 "tags": [
                     "users"
                 ],
@@ -485,8 +603,26 @@ const docTemplate = `{
                             "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "User has tasks",
                         "schema": {
                             "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
                         }
@@ -500,7 +636,12 @@ const docTemplate = `{
                 }
             },
             "patch": {
-                "description": "Изменение информации об уже существующем пользователе\n### Логика обновления полей (Three-state logic):\n1. **Поле не передано**: ` + "`" + `phone_number` + "`" + ` игнорируется, значение в БД не меняется\n2. **Явно передано значение**: ` + "`" + `\"phone_number\": \"+74443332211\"` + "`" + ` - устанавливает новый номер\n3. **Явно передан null**: ` + "`" + `\"phone_number\": null` + "`" + ` - очищает поле в БД\nОграничения: ` + "`" + `full_name` + "`" + ` не может быть выставлен как null",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Изменение своего аккаунта. Чужой ID возвращает 403.\n### Логика обновления полей (Three-state logic):\n1. **Поле не передано**: ` + "`" + `phone_number` + "`" + ` игнорируется, значение в БД не меняется\n2. **Явно передано значение**: ` + "`" + `\"phone_number\": \"+74443332211\"` + "`" + ` - устанавливает новый номер\n3. **Явно передан null**: ` + "`" + `\"phone_number\": null` + "`" + ` - очищает поле в БД\nОграничения: ` + "`" + `full_name` + "`" + ` не может быть выставлен как null",
                 "consumes": [
                     "application/json"
                 ],
@@ -542,6 +683,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "User not found",
                         "schema": {
@@ -578,25 +731,88 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_cdlinkin_LevelUp_internal_core_transport_http_types.Nullable-bool": {
+        "internal_features_auth_transport_http.LoginRequest": {
             "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
             "properties": {
-                "set": {
-                    "type": "boolean"
+                "email": {
+                    "type": "string",
+                    "example": "roman@mail.ru"
                 },
-                "value": {
-                    "type": "boolean"
+                "password": {
+                    "type": "string",
+                    "example": "secret123"
                 }
             }
         },
-        "github_com_cdlinkin_LevelUp_internal_core_transport_http_types.Nullable-string": {
+        "internal_features_auth_transport_http.LoginResponse": {
             "type": "object",
             "properties": {
-                "set": {
-                    "type": "boolean"
+                "access_token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                 },
-                "value": {
-                    "type": "string"
+                "expires_in": {
+                    "type": "integer",
+                    "example": 86400
+                },
+                "token_type": {
+                    "type": "string",
+                    "example": "Bearer"
+                }
+            }
+        },
+        "internal_features_auth_transport_http.RegisterRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "full_name",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "roman@mail.ru"
+                },
+                "full_name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 3,
+                    "example": "Roman Romanovich"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "secret123"
+                },
+                "phone_number": {
+                    "type": "string",
+                    "maxLength": 15,
+                    "minLength": 10,
+                    "example": "+79998887766"
+                }
+            }
+        },
+        "internal_features_auth_transport_http.RegisterResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "roman@mail.ru"
+                },
+                "full_name": {
+                    "type": "string",
+                    "example": "Roman Romanovich"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "phone_number": {
+                    "type": "string",
+                    "example": "+79998887766"
                 }
             }
         },
@@ -624,13 +840,9 @@ const docTemplate = `{
         "internal_features_tasks_transport_http.CreateTaskRequest": {
             "type": "object",
             "required": [
-                "author_user_id",
                 "title"
             ],
             "properties": {
-                "author_user_id": {
-                    "type": "integer"
-                },
                 "description": {
                     "type": "string",
                     "maxLength": 1000,
@@ -723,13 +935,16 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "completed": {
-                    "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_types.Nullable-bool"
+                    "type": "boolean",
+                    "example": true
                 },
                 "description": {
-                    "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_types.Nullable-string"
+                    "type": "string",
+                    "example": "to walk 100 km"
                 },
                 "title": {
-                    "$ref": "#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_types.Nullable-string"
+                    "type": "string",
+                    "example": "to go outside"
                 }
             }
         },
@@ -807,47 +1022,6 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_features_users_transport_http.CreateUserRequest": {
-            "type": "object",
-            "required": [
-                "full_name"
-            ],
-            "properties": {
-                "full_name": {
-                    "type": "string",
-                    "maxLength": 100,
-                    "minLength": 3,
-                    "example": "Roman Romanovich"
-                },
-                "phone_number": {
-                    "type": "string",
-                    "maxLength": 15,
-                    "minLength": 10,
-                    "example": "+79998887766"
-                }
-            }
-        },
-        "internal_features_users_transport_http.CreateUserResponse": {
-            "type": "object",
-            "properties": {
-                "full_name": {
-                    "type": "string",
-                    "example": "Roman Romanovich"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 10
-                },
-                "phone_number": {
-                    "type": "string",
-                    "example": "+79998887766"
-                },
-                "version": {
-                    "type": "integer",
-                    "example": 3
-                }
-            }
-        },
         "internal_features_users_transport_http.GetUserResponse": {
             "type": "object",
             "properties": {
@@ -902,27 +1076,14 @@ const docTemplate = `{
                     "example": 3
                 }
             }
-        },
-        "internal_features_users_transport_http.UserDTOResponse": {
-            "type": "object",
-            "properties": {
-                "full_name": {
-                    "type": "string",
-                    "example": "Roman Romanovich"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 10
-                },
-                "phone_number": {
-                    "type": "string",
-                    "example": "+79998887766"
-                },
-                "version": {
-                    "type": "integer",
-                    "example": 3
-                }
-            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "JWT access token из POST /auth/login. Формат: ` + "`" + `Bearer \u003caccess_token\u003e` + "`" + `",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`

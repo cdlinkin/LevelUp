@@ -9,18 +9,66 @@ definitions:
         example: short human-readable message
         type: string
     type: object
-  github_com_cdlinkin_LevelUp_internal_core_transport_http_types.Nullable-bool:
+  internal_features_auth_transport_http.LoginRequest:
     properties:
-      set:
-        type: boolean
-      value:
-        type: boolean
+      email:
+        example: roman@mail.ru
+        type: string
+      password:
+        example: secret123
+        type: string
+    required:
+    - email
+    - password
     type: object
-  github_com_cdlinkin_LevelUp_internal_core_transport_http_types.Nullable-string:
+  internal_features_auth_transport_http.LoginResponse:
     properties:
-      set:
-        type: boolean
-      value:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      expires_in:
+        example: 86400
+        type: integer
+      token_type:
+        example: Bearer
+        type: string
+    type: object
+  internal_features_auth_transport_http.RegisterRequest:
+    properties:
+      email:
+        example: roman@mail.ru
+        type: string
+      full_name:
+        example: Roman Romanovich
+        maxLength: 100
+        minLength: 3
+        type: string
+      password:
+        example: secret123
+        type: string
+      phone_number:
+        example: "+79998887766"
+        maxLength: 15
+        minLength: 10
+        type: string
+    required:
+    - email
+    - full_name
+    - password
+    type: object
+  internal_features_auth_transport_http.RegisterResponse:
+    properties:
+      email:
+        example: roman@mail.ru
+        type: string
+      full_name:
+        example: Roman Romanovich
+        type: string
+      id:
+        example: 1
+        type: integer
+      phone_number:
+        example: "+79998887766"
         type: string
     type: object
   internal_features_statistics_transport_http.GetStatisticsResponse:
@@ -40,8 +88,6 @@ definitions:
     type: object
   internal_features_tasks_transport_http.CreateTaskRequest:
     properties:
-      author_user_id:
-        type: integer
       description:
         example: to walk 100 km
         maxLength: 1000
@@ -53,7 +99,6 @@ definitions:
         minLength: 1
         type: string
     required:
-    - author_user_id
     - title
     type: object
   internal_features_tasks_transport_http.CreateTaskResponse:
@@ -113,11 +158,14 @@ definitions:
   internal_features_tasks_transport_http.PatchTaskRequest:
     properties:
       completed:
-        $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_types.Nullable-bool'
+        example: true
+        type: boolean
       description:
-        $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_types.Nullable-string'
+        example: to walk 100 km
+        type: string
       title:
-        $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_types.Nullable-string'
+        example: to go outside
+        type: string
     type: object
   internal_features_tasks_transport_http.PatchTaskResponse:
     properties:
@@ -173,36 +221,6 @@ definitions:
         example: 2
         type: integer
     type: object
-  internal_features_users_transport_http.CreateUserRequest:
-    properties:
-      full_name:
-        example: Roman Romanovich
-        maxLength: 100
-        minLength: 3
-        type: string
-      phone_number:
-        example: "+79998887766"
-        maxLength: 15
-        minLength: 10
-        type: string
-    required:
-    - full_name
-    type: object
-  internal_features_users_transport_http.CreateUserResponse:
-    properties:
-      full_name:
-        example: Roman Romanovich
-        type: string
-      id:
-        example: 10
-        type: integer
-      phone_number:
-        example: "+79998887766"
-        type: string
-      version:
-        example: 3
-        type: integer
-    type: object
   internal_features_users_transport_http.GetUserResponse:
     properties:
       full_name:
@@ -242,21 +260,6 @@ definitions:
         example: 3
         type: integer
     type: object
-  internal_features_users_transport_http.UserDTOResponse:
-    properties:
-      full_name:
-        example: Roman Romanovich
-        type: string
-      id:
-        example: 10
-        type: integer
-      phone_number:
-        example: "+79998887766"
-        type: string
-      version:
-        example: 3
-        type: integer
-    type: object
 host: 127.0.0.1:5050
 info:
   contact: {}
@@ -264,15 +267,108 @@ info:
   title: LevelUp API
   version: "1.0"
 paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Проверяет email и пароль, возвращает JWT access token.
+        Токен передаётся в остальные запросы заголовком `Authorization: Bearer <access_token>`.
+        На неизвестный email и неверный пароль ответ одинаковый: 401.
+      parameters:
+      - description: Login тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_features_auth_transport_http.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный вход
+          schema:
+            $ref: '#/definitions/internal_features_auth_transport_http.LoginResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+        "401":
+          description: Invalid email or password
+          schema:
+            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+      summary: Вход в систему
+      tags:
+      - auth
+  /auth/me:
+    get:
+      description: Возвращает пользователя, которому принадлежит access token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Текущий пользователь
+          schema:
+            $ref: '#/definitions/internal_features_auth_transport_http.RegisterResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Текущий пользователь
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Создаёт пользователя с email и паролем.
+        Email приводится к нижнему регистру, пароль хранится только в виде bcrypt-хеша.
+        Ограничения: пароль от 8 до 72 байт, `full_name` от 3 до 100 символов.
+      parameters:
+      - description: Register тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_features_auth_transport_http.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Пользователь зарегистрирован
+          schema:
+            $ref: '#/definitions/internal_features_auth_transport_http.RegisterResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+        "409":
+          description: Email already exists
+          schema:
+            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+      summary: Регистрация пользователя
+      tags:
+      - auth
   /statistics:
     get:
-      description: Получение статистики по задачам с опциональной фильтрацией по user_id
-        и/или временному промежутку
+      description: Статистика по задачам текущего пользователя с опциональной фильтрацией
+        по временному промежутку
       parameters:
-      - description: Фильтрация статистики по конкретному пользователю
-        in: query
-        name: user_id
-        type: integer
       - description: 'Начало промежутка рассмотрения статистики (включительно), формат:
           YYYY-MM-DD'
         in: query
@@ -294,22 +390,23 @@ paths:
           description: Bad request
           schema:
             $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
         "500":
           description: Internal server error
           schema:
             $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Получение статистики
       tags:
       - statistics
   /tasks:
     get:
-      description: Просмотр списка задач с опциональной пагинацией и/или фильтрацией
-        по ID автора задачи
+      description: Список задач текущего пользователя с опциональной пагинацией
       parameters:
-      - description: Фильтрация задач по ID автора
-        in: query
-        name: user_id
-        type: integer
       - description: Размер страницы с задачами
         in: query
         name: limit
@@ -331,17 +428,24 @@ paths:
           description: Bad request
           schema:
             $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
         "500":
           description: Internal server error
           schema:
             $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Список задач
       tags:
       - tasks
     post:
       consumes:
       - application/json
-      description: Создать новую задачу в системе.
+      description: Создать новую задачу. Автором становится пользователь из access
+        token.
       parameters:
       - description: CreateTask тело запроса
         in: body
@@ -360,20 +464,23 @@ paths:
           description: Bad request
           schema:
             $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
-        "404":
-          description: Author not found
+        "401":
+          description: Unauthorized
           schema:
             $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
         "500":
           description: Internal server error
           schema:
             $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Создать задачу
       tags:
       - tasks
   /tasks/{id}:
     delete:
-      description: Удалить существующую в системе задачу по её ID
+      description: Удалить задачу текущего пользователя по её ID. Чужая задача возвращает
+        404.
       parameters:
       - description: ID удаляемой задачи
         in: path
@@ -387,6 +494,10 @@ paths:
           description: Bad request
           schema:
             $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
         "404":
           description: Task not found
           schema:
@@ -395,11 +506,14 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Удаление задачи
       tags:
       - tasks
     get:
-      description: Получение конкретной задачи по её ID
+      description: Получение задачи текущего пользователя по её ID. Чужая задача возвращает
+        404.
       parameters:
       - description: ID получаемой задачи
         in: path
@@ -417,6 +531,10 @@ paths:
           description: Bad request
           schema:
             $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
         "404":
           description: Task not found
           schema:
@@ -425,6 +543,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Получение задачи
       tags:
       - tasks
@@ -432,7 +552,7 @@ paths:
       consumes:
       - application/json
       description: |-
-        Обновляет информацию об уже существующей в системе задаче
+        Обновляет задачу текущего пользователя. Чужая задача возвращает 404.
         ### Логика обновления полей (Three-state logic):
         1. **Поле не передано**: `description` игнорируется, значение в БД не меняется
         2. **Явно передано значение**: `"description": "Утром в 06:30 выйти на прогулку с Бобиком"`
@@ -461,6 +581,10 @@ paths:
           description: Bad request
           schema:
             $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
         "404":
           description: Task not found
           schema:
@@ -473,73 +597,15 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Обновить задачу
       tags:
       - tasks
-  /users:
-    get:
-      description: Просмотр списка пользователей с опциональной пагинацией
-      parameters:
-      - description: Размер страницы с пользователями
-        in: query
-        name: limit
-        type: integer
-      - description: Смещение страницы с ользователями
-        in: query
-        name: offset
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Успешное получение списка пользователей
-          schema:
-            items:
-              $ref: '#/definitions/internal_features_users_transport_http.UserDTOResponse'
-            type: array
-        "400":
-          description: Bad request
-          schema:
-            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
-      summary: Список пользователей
-      tags:
-      - users
-    post:
-      consumes:
-      - application/json
-      description: Создать нового пользователя в системе
-      parameters:
-      - description: CreateUser тело запроса
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/internal_features_users_transport_http.CreateUserRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Успешно созданный пользователь
-          schema:
-            $ref: '#/definitions/internal_features_users_transport_http.CreateUserResponse'
-        "400":
-          description: Bad request
-          schema:
-            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
-      summary: Создать пользователя
-      tags:
-      - users
   /users/{id}:
     delete:
-      description: Удаление существующего пользователя в системе
+      description: Удаление своего аккаунта. Чужой ID возвращает 403, пользователь
+        с задачами — 409.
       parameters:
       - description: ID удаляемого пользователя
         in: path
@@ -553,19 +619,34 @@ paths:
           description: Bad request
           schema:
             $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
         "404":
           description: User not found
+          schema:
+            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+        "409":
+          description: User has tasks
           schema:
             $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
         "500":
           description: Internal server error
           schema:
             $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Удалить пользователя
       tags:
       - users
     get:
-      description: Получение конкретного пользователя по его ID
+      description: Получение пользователя по ID. Доступно только для своего ID, иначе
+        403.
       parameters:
       - description: ID получаемого пользователя
         in: path
@@ -583,6 +664,14 @@ paths:
           description: Bad request
           schema:
             $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
         "404":
           description: User not found
           schema:
@@ -591,6 +680,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Получение пользователя
       tags:
       - users
@@ -598,7 +689,7 @@ paths:
       consumes:
       - application/json
       description: |-
-        Изменение информации об уже существующем пользователе
+        Изменение своего аккаунта. Чужой ID возвращает 403.
         ### Логика обновления полей (Three-state logic):
         1. **Поле не передано**: `phone_number` игнорируется, значение в БД не меняется
         2. **Явно передано значение**: `"phone_number": "+74443332211"` - устанавливает новый номер
@@ -627,6 +718,14 @@ paths:
           description: Bad request
           schema:
             $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
         "404":
           description: User not found
           schema:
@@ -639,7 +738,15 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/github_com_cdlinkin_LevelUp_internal_core_transport_http_response.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Изменение пользователя
       tags:
       - users
+securityDefinitions:
+  BearerAuth:
+    description: 'JWT access token из POST /auth/login. Формат: `Bearer <access_token>`'
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

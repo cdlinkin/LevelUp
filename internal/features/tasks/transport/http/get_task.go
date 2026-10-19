@@ -14,12 +14,14 @@ type GetTaskResponse TaskDTOResponse
 
 // GetTask 		godoc
 // @Summary 	Получение задачи
-// @Description Получение конкретной задачи по её ID
+// @Description Получение задачи текущего пользователя по её ID. Чужая задача возвращает 404.
 // @Tags 	tasks
 // @Produce json
+// @Security BearerAuth
 // @Param 	id path int true 							  "ID получаемой задачи"
 // @Success 200 {object} GetTaskResponse 				  "Задача успешно найдена"
 // @Failure 400 {object} core_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_http_response.ErrorResponse "Unauthorized"
 // @Failure 404 {object} core_http_response.ErrorResponse "Task not found"
 // @Failure 500 {object} core_http_response.ErrorResponse "Internal server error"
 // @Router /tasks/{id} [get]

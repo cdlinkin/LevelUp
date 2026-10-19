@@ -9,6 +9,16 @@ import (
 	core_http_response "github.com/cdlinkin/LevelUp/internal/core/transport/http/response"
 )
 
+// Me 				godoc
+// @Summary 		Текущий пользователь
+// @Description 	Возвращает пользователя, которому принадлежит access token
+// @Tags 			auth
+// @Produce 		json
+// @Security 		BearerAuth
+// @Success 		200 {object} RegisterResponse "Текущий пользователь"
+// @Failure 		401 {object} core_http_response.ErrorResponse "Unauthorized"
+// @Failure 		500 {object} core_http_response.ErrorResponse "Internal server error"
+// @Router 			/auth/me [get]
 func (h *AuthHTTPHandler) Me(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

@@ -15,13 +15,15 @@ type GetTasksResponse []TaskDTOResponse
 
 // GetTasks		 godoc
 // @Summary		 Список задач
-// @Description	 Просмотр списка задач с опциональной пагинацией и/или фильтрацией по ID автора задачи
+// @Description	 Список задач текущего пользователя с опциональной пагинацией
 // @Tags 		tasks
 // @Produce 	json
+// @Security 	BearerAuth
 // @Param limit query int false 		"Размер страницы с задачами"
 // @Param offset query int false 		"Смещение страницы с задачами"
 // @Success 200 {object} GetTasksResponse 				  "Список задач"
 // @Failure 400 {object} core_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_http_response.ErrorResponse "Unauthorized"
 // @Failure 500 {object} core_http_response.ErrorResponse "Internal server error"
 // @Router /tasks [get]
 func (h *TasksHTTPHandler) GetTasks(rw http.ResponseWriter, r *http.Request) {

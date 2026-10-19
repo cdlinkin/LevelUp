@@ -52,7 +52,7 @@ type PatchUserResponse UserDTOResponse
 
 // PatchUser godoc
 // @Summary Изменение пользователя
-// @Description Изменение информации об уже существующем пользователе
+// @Description Изменение своего аккаунта. Чужой ID возвращает 403.
 // @Description ### Логика обновления полей (Three-state logic):
 // @Description 1. **Поле не передано**: `phone_number` игнорируется, значение в БД не меняется
 // @Description 2. **Явно передано значение**: `"phone_number": "+74443332211"` - устанавливает новый номер
@@ -61,10 +61,13 @@ type PatchUserResponse UserDTOResponse
 // @Tags users
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID изменяемого пользователя"
 // @Param request body PatchUserRequest true "PatchUser тело запроса"
 // @Success 200 {object} PatchUserResponse "Пользователь успешно изменен"
 // @Failure 400 {object} core_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_http_response.ErrorResponse "Unauthorized"
+// @Failure 403 {object} core_http_response.ErrorResponse "Forbidden"
 // @Failure 404 {object} core_http_response.ErrorResponse "User not found"
 // @Failure 409 {object} core_http_response.ErrorResponse "Conflict"
 // @Failure 500 {object} core_http_response.ErrorResponse "Internal server error"
