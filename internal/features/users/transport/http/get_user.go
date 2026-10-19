@@ -3,6 +3,8 @@ package users_transport_http
 import (
 	"net/http"
 
+	core_auth "github.com/cdlinkin/LevelUp/internal/core/auth"
+	core_errors "github.com/cdlinkin/LevelUp/internal/core/errors"
 	core_logger "github.com/cdlinkin/LevelUp/internal/core/logger"
 	core_http_request "github.com/cdlinkin/LevelUp/internal/core/transport/http/request"
 	core_http_response "github.com/cdlinkin/LevelUp/internal/core/transport/http/response"
@@ -18,6 +20,7 @@ type GetUserResponse UserDTOResponse
 // @Param 			id path int true							  "ID получаемого пользователя"
 // @Success 		200 {object} GetUserResponse 				  "Пользователь успешно найден"
 // @Failure 		400 {object} core_http_response.ErrorResponse "Bad request"
+// @Failure 		403 {object} core_http_response.ErrorResponse "Forbidden"
 // @Failure 		404 {object} core_http_response.ErrorResponse "User not found"
 // @Failure 		500 {object} core_http_response.ErrorResponse "Internal server error"
 // @Router /users/{id} [get]
@@ -25,6 +28,15 @@ func (h *UsersHTTPHandler) GetUser(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, rw)
+
+	currentUserID, ok := core_auth.UserIDFromContext(ctx)
+	if !ok {
+		responseHandler.ErrorResponse(
+			core_errors.ErrUnauthorized,
+			"failed to get user from context",
+		)
+		return
+	}
 
 	userID, err := core_http_request.GetIntPathValue(r, "id")
 	if err != nil {
@@ -35,7 +47,7 @@ func (h *UsersHTTPHandler) GetUser(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.usersService.GetUser(ctx, userID)
+	user, err := h.usersService.GetUser(ctx, currentUserID, userID)
 	if err != nil {
 		responseHandler.ErrorResponse(
 			err,

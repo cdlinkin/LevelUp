@@ -3,6 +3,8 @@ package tasks_transport_http
 import (
 	"net/http"
 
+	core_auth "github.com/cdlinkin/LevelUp/internal/core/auth"
+	core_errors "github.com/cdlinkin/LevelUp/internal/core/errors"
 	core_logger "github.com/cdlinkin/LevelUp/internal/core/logger"
 	core_http_request "github.com/cdlinkin/LevelUp/internal/core/transport/http/request"
 	core_http_response "github.com/cdlinkin/LevelUp/internal/core/transport/http/response"
@@ -32,7 +34,16 @@ func (h *TasksHTTPHandler) DeleteTask(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.tasksService.DeleteTask(ctx, taskID); err != nil {
+	userID, ok := core_auth.UserIDFromContext(ctx)
+	if !ok {
+		responseHandler.ErrorResponse(
+			core_errors.ErrUnauthorized,
+			"failed to get user from context",
+		)
+		return
+	}
+
+	if err := h.tasksService.DeleteTask(ctx, userID, taskID); err != nil {
 		responseHandler.ErrorResponse(
 			err,
 			"failed to delete task",

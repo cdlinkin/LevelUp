@@ -105,10 +105,27 @@ func main() {
 		core_http_middleware.Panic(),
 	)
 	apiVersionRouterV1 := core_http_server.NewAPIVersionRouter(core_http_server.ApiVersion1, nil)
-	apiVersionRouterV1.RegisterRoutes(userTransportHTTP.Routes()...)
-	apiVersionRouterV1.RegisterRoutes(tasksTransportHTTP.Routes()...)
-	apiVersionRouterV1.RegisterRoutes(statisticsTransportHTTP.Routes()...)
-	apiVersionRouterV1.RegisterRoutes(authTransportHTTP.Routes()...)
+	apiVersionRouterV1.RegisterRoutes(
+		core_http_server.WithMiddleware(
+			userTransportHTTP.Routes(),
+			authMiddleware,
+		)...,
+	)
+	apiVersionRouterV1.RegisterRoutes(
+		core_http_server.WithMiddleware(
+			tasksTransportHTTP.Routes(),
+			authMiddleware,
+		)...,
+	)
+	apiVersionRouterV1.RegisterRoutes(
+		core_http_server.WithMiddleware(
+			statisticsTransportHTTP.Routes(),
+			authMiddleware,
+		)...,
+	)
+	apiVersionRouterV1.RegisterRoutes(
+		authTransportHTTP.Routes()...,
+	)
 
 	httpServer.RegisterAPIRouters(apiVersionRouterV1)
 	httpServer.RegisterRoutes(webTransportHTTP.Routes()...)

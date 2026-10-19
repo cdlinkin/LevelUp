@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
+	core_auth "github.com/cdlinkin/LevelUp/internal/core/auth"
 	"github.com/cdlinkin/LevelUp/internal/core/domain"
+	core_errors "github.com/cdlinkin/LevelUp/internal/core/errors"
 	core_logger "github.com/cdlinkin/LevelUp/internal/core/logger"
 	core_http_request "github.com/cdlinkin/LevelUp/internal/core/transport/http/request"
 	core_http_response "github.com/cdlinkin/LevelUp/internal/core/transport/http/response"
@@ -94,8 +96,15 @@ func (h *TasksHTTPHandler) PatchTask(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	taskPatch := taskPatchFromRequest(request)
-
-	taskDomain, err := h.tasksService.PatchTask(ctx, taskID, taskPatch)
+	userID, ok := core_auth.UserIDFromContext(ctx)
+	if !ok {
+		responseHandler.ErrorResponse(
+			core_errors.ErrUnauthorized,
+			"failed to get user from context",
+		)
+		return
+	}
+	taskDomain, err := h.tasksService.PatchTask(ctx, userID, taskID, taskPatch)
 	if err != nil {
 		responseHandler.ErrorResponse(
 			err,

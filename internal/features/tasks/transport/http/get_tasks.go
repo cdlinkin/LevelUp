@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	core_auth "github.com/cdlinkin/LevelUp/internal/core/auth"
+	core_errors "github.com/cdlinkin/LevelUp/internal/core/errors"
 	core_logger "github.com/cdlinkin/LevelUp/internal/core/logger"
 	core_http_request "github.com/cdlinkin/LevelUp/internal/core/transport/http/request"
 	core_http_response "github.com/cdlinkin/LevelUp/internal/core/transport/http/response"
@@ -16,7 +18,6 @@ type GetTasksResponse []TaskDTOResponse
 // @Description	 Просмотр списка задач с опциональной пагинацией и/или фильтрацией по ID автора задачи
 // @Tags 		tasks
 // @Produce 	json
-// @Param user_id query int false 		"Фильтрация задач по ID автора"
 // @Param limit query int false 		"Размер страницы с задачами"
 // @Param offset query int false 		"Смещение страницы с задачами"
 // @Success 200 {object} GetTasksResponse 				  "Список задач"
@@ -28,7 +29,7 @@ func (h *TasksHTTPHandler) GetTasks(rw http.ResponseWriter, r *http.Request) {
 	log := core_logger.FromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, rw)
 
-	userID, limit, offset, err := getUserIDLimitOffsetQueryParams(r)
+	limit, offset, err := getLimitOffsetQueryParams(r)
 	if err != nil {
 		responseHandler.ErrorResponse(
 			err,
@@ -37,7 +38,16 @@ func (h *TasksHTTPHandler) GetTasks(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tasksDomains, err := h.tasksService.GetTasks(ctx, userID, limit, offset)
+	userID, ok := core_auth.UserIDFromContext(ctx)
+	if !ok {
+		responseHandler.ErrorResponse(
+			core_errors.ErrUnauthorized,
+			"failed to get user from context",
+		)
+		return
+	}
+
+	tasksDomains, err := h.tasksService.GetTasks(ctx, &userID, limit, offset)
 	if err != nil {
 		responseHandler.ErrorResponse(
 			err,
@@ -51,27 +61,21 @@ func (h *TasksHTTPHandler) GetTasks(rw http.ResponseWriter, r *http.Request) {
 	responseHandler.JSONResponse(response, http.StatusOK)
 }
 
-func getUserIDLimitOffsetQueryParams(r *http.Request) (*int, *int, *int, error) {
+func getLimitOffsetQueryParams(r *http.Request) (*int, *int, error) {
 	const (
-		userIDQueryParamKey = "user_id"
 		limitQueryParamKey  = "limit"
 		offsetQueryParamKey = "offset"
 	)
 
-	userID, err := core_http_request.GetIntQueryParam(r, userIDQueryParamKey)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("get 'user_id' query param: %w", err)
-	}
-
 	limit, err := core_http_request.GetIntQueryParam(r, limitQueryParamKey)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("get 'limit' query param: %w", err)
+		return nil, nil, fmt.Errorf("get 'limit' query param: %w", err)
 	}
 
 	offset, err := core_http_request.GetIntQueryParam(r, offsetQueryParamKey)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("get 'offset' query param: %w", err)
+		return nil, nil, fmt.Errorf("get 'offset' query param: %w", err)
 	}
 
-	return userID, limit, offset, nil
+	return limit, offset, nil
 }
