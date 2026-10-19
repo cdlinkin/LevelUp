@@ -89,8 +89,9 @@ func main() {
 
 	logger.Debug("initializing feature", zap.String("feature", "auth"))
 	tokenManager := core_auth.NewTokenManager(core_auth.NewConfigMust())
+	authMiddleware := core_http_middleware.Auth(tokenManager)
 	authService := auth_service.NewAuthService(usersRepository, tokenManager)
-	authTransportHTTP := auth_transport_http.NewAuthHTTPHandler(authService)
+	authTransportHTTP := auth_transport_http.NewAuthHTTPHandler(authService, authMiddleware)
 
 	logger.Debug("initializing HTTP server")
 	httpConfig := core_http_server.NewConfigMust()

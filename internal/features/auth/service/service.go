@@ -26,6 +26,10 @@ type UsersRepository interface {
 		ctx context.Context,
 		email string,
 	) (domain.User, error)
+	GetUser(
+		ctx context.Context,
+		id int,
+	) (domain.User, error)
 }
 
 func NewAuthService(

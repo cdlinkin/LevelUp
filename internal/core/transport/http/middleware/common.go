@@ -2,8 +2,11 @@ package core_http_middleware
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
+	core_auth "github.com/cdlinkin/LevelUp/internal/core/auth"
+	core_errors "github.com/cdlinkin/LevelUp/internal/core/errors"
 	core_logger "github.com/cdlinkin/LevelUp/internal/core/logger"
 	core_http_response "github.com/cdlinkin/LevelUp/internal/core/transport/http/response"
 	"github.com/google/uuid"
@@ -11,6 +14,10 @@ import (
 )
 
 const requestIDHeader = "X-Request-ID"
+
+type TokenParser interface {
+	Parse(token string) (int, error)
+}
 
 func CORS(allowedOriginsList []string) Middleware {
 	allowedOrigins := make(map[string]struct{})
@@ -50,6 +57,37 @@ func RequestID() Middleware {
 			w.Header().Set(requestIDHeader, requestID)
 
 			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func Auth(parser TokenParser) Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			log := core_logger.FromContext(ctx)
+			responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
+
+			header := r.Header.Get("Authorization")
+			token, ok := strings.CutPrefix(header, "Bearer ")
+			if !ok || token == "" {
+				responseHandler.ErrorResponse(
+					core_errors.ErrUnauthorized,
+					"missing bearer token",
+				)
+				return
+			}
+
+			userID, err := parser.Parse(token)
+			if err != nil {
+				responseHandler.ErrorResponse(
+					err,
+					"invalid token",
+				)
+				return
+			}
+
+			next.ServeHTTP(w, r.WithContext(core_auth.ToContext(ctx, userID)))
 		})
 	}
 }
