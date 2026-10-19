@@ -17,6 +17,8 @@ services:
       - LOGGER_LEVEL=${LOGGER_LEVEL}
       - TIME_ZONE=${TIME_ZONE}
       - LOGGER_FOLDER=/app/out/logs
+      - AUTH_JWT_SECRET=${AUTH_JWT_SECRET}
+      - AUTH_TOKEN_TTL=${AUTH_TOKEN_TTL}
     volumes:
       - ${PROJECT_ROOT}/out/logs:/app/out/logs
     ports:

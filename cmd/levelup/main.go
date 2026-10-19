@@ -105,7 +105,6 @@ func main() {
 	apiVersionRouterV1.RegisterRoutes(userTransportHTTP.Routes()...)
 	apiVersionRouterV1.RegisterRoutes(tasksTransportHTTP.Routes()...)
 	apiVersionRouterV1.RegisterRoutes(statisticsTransportHTTP.Routes()...)
-	apiVersionRouterV1.RegisterRoutes(webTransportHTTP.Routes()...)
 	apiVersionRouterV1.RegisterRoutes(authTransportHTTP.Routes()...)
 
 	httpServer.RegisterAPIRouters(apiVersionRouterV1)
