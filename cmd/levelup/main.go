@@ -13,6 +13,8 @@ import (
 	core_pgx_pool "github.com/cdlinkin/LevelUp/internal/core/repository/postgres/pool/pgx"
 	core_http_middleware "github.com/cdlinkin/LevelUp/internal/core/transport/http/middleware"
 	core_http_server "github.com/cdlinkin/LevelUp/internal/core/transport/http/server"
+	auth_service "github.com/cdlinkin/LevelUp/internal/features/auth/service"
+	auth_transport_http "github.com/cdlinkin/LevelUp/internal/features/auth/transport/http"
 	statistics_postgres_repository "github.com/cdlinkin/LevelUp/internal/features/statistics/repository/postgres"
 	statistics_service "github.com/cdlinkin/LevelUp/internal/features/statistics/service"
 	statistics_transport_http "github.com/cdlinkin/LevelUp/internal/features/statistics/transport/http"
@@ -84,6 +86,10 @@ func main() {
 	webService := web_service.NewWebService(webRepository)
 	webTransportHTTP := web_transport_http.NewWebHTTPHandler(webService)
 
+	logger.Debug("initializing feature", zap.String("feature", "auth"))
+	authService := auth_service.NewAuthService(usersRepository)
+	authTransportHTTP := auth_transport_http.NewAuthHTTPHandler(authService)
+
 	logger.Debug("initializing HTTP server")
 	httpConfig := core_http_server.NewConfigMust()
 	httpServer := core_http_server.NewHTTPServer(
@@ -100,6 +106,7 @@ func main() {
 	apiVersionRouterV1.RegisterRoutes(tasksTransportHTTP.Routes()...)
 	apiVersionRouterV1.RegisterRoutes(statisticsTransportHTTP.Routes()...)
 	apiVersionRouterV1.RegisterRoutes(webTransportHTTP.Routes()...)
+	apiVersionRouterV1.RegisterRoutes(authTransportHTTP.Routes()...)
 
 	httpServer.RegisterAPIRouters(apiVersionRouterV1)
 	httpServer.RegisterRoutes(webTransportHTTP.Routes()...)
