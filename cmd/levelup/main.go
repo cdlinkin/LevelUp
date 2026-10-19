@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	core_auth "github.com/cdlinkin/LevelUp/internal/core/auth"
 	core_config "github.com/cdlinkin/LevelUp/internal/core/config"
 	core_logger "github.com/cdlinkin/LevelUp/internal/core/logger"
 	core_pgx_pool "github.com/cdlinkin/LevelUp/internal/core/repository/postgres/pool/pgx"
@@ -87,7 +88,8 @@ func main() {
 	webTransportHTTP := web_transport_http.NewWebHTTPHandler(webService)
 
 	logger.Debug("initializing feature", zap.String("feature", "auth"))
-	authService := auth_service.NewAuthService(usersRepository)
+	tokenManager := core_auth.NewTokenManager(core_auth.NewConfigMust())
+	authService := auth_service.NewAuthService(usersRepository, tokenManager)
 	authTransportHTTP := auth_transport_http.NewAuthHTTPHandler(authService)
 
 	logger.Debug("initializing HTTP server")
