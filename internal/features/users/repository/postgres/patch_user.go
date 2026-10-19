@@ -29,7 +29,8 @@ func (r *UsersRepository) PatchUser(
 		id,
 		version,
 		full_name,
-		phone_number
+		phone_number,
+		email;
 	`
 
 	row := r.pool.QueryRow(
@@ -47,6 +48,7 @@ func (r *UsersRepository) PatchUser(
 		&userModel.Version,
 		&userModel.FullName,
 		&userModel.PhoneNumber,
+		&userModel.Email,
 	)
 	if err != nil {
 		if errors.Is(err, core_postgres_pool.ErrNoRows) {
@@ -63,6 +65,8 @@ func (r *UsersRepository) PatchUser(
 		userModel.Version,
 		userModel.FullName,
 		userModel.PhoneNumber,
+		userModel.Email,
+		userModel.PasswordHash,
 	)
 
 	return userDomain, nil

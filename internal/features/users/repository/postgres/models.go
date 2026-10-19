@@ -3,10 +3,12 @@ package users_postgres_repository
 import "github.com/cdlinkin/LevelUp/internal/core/domain"
 
 type UserModel struct {
-	ID          int
-	Version     int
-	FullName    string
-	PhoneNumber *string
+	ID           int
+	Version      int
+	FullName     string
+	PhoneNumber  *string
+	Email        string
+	PasswordHash string
 }
 
 func userDomainsFromModels(users []UserModel) []domain.User {
@@ -18,6 +20,8 @@ func userDomainsFromModels(users []UserModel) []domain.User {
 			user.Version,
 			user.FullName,
 			user.PhoneNumber,
+			user.Email,
+			user.PasswordHash,
 		)
 	}
 

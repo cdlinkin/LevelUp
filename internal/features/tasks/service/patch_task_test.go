@@ -21,6 +21,8 @@ type fakeTasksRepository struct {
 	patchTaskArg    domain.Task
 
 	getTasksCalled bool
+
+	deleteTaskCalled bool
 }
 
 func (f *fakeTasksRepository) CreateTask(ctx context.Context, task domain.Task) (domain.Task, error) {
@@ -37,6 +39,7 @@ func (f *fakeTasksRepository) GetTask(ctx context.Context, id int) (domain.Task,
 }
 
 func (f *fakeTasksRepository) DeleteTask(ctx context.Context, id int) error {
+	f.deleteTaskCalled = true
 	return nil
 }
 
@@ -54,10 +57,11 @@ func ptr[T any](v T) *T { return &v }
 
 func existingTask() domain.Task {
 	return domain.Task{
-		ID:        1,
-		Version:   1,
-		Title:     "do homework",
-		CreatedAt: time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
+		ID:           1,
+		Version:      1,
+		Title:        "do homework",
+		CreatedAt:    time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
+		AuthorUserID: 1,
 	}
 }
 
@@ -71,7 +75,7 @@ func TestPatchTask_NotFound(t *testing.T) {
 		Title: domain.Nullable[string]{Value: ptr("new title"), Set: true},
 	}
 
-	_, err := service.PatchTask(context.Background(), 1, patch)
+	_, err := service.PatchTask(context.Background(), 1, 1, patch)
 
 	if !errors.Is(err, core_errors.ErrNotFound) {
 		t.Errorf("PatchTask() error = %v, want %v", err, core_errors.ErrNotFound)
@@ -91,7 +95,7 @@ func TestPatchTask_InvalidPatch(t *testing.T) {
 		Title: domain.Nullable[string]{Value: nil, Set: true},
 	}
 
-	_, err := service.PatchTask(context.Background(), 1, patch)
+	_, err := service.PatchTask(context.Background(), 1, 1, patch)
 
 	if !errors.Is(err, core_errors.ErrInvalidArgument) {
 		t.Errorf("PatchTask() error = %v, want %v", err, core_errors.ErrInvalidArgument)
@@ -111,7 +115,7 @@ func TestPatchTask_Success(t *testing.T) {
 		Title: domain.Nullable[string]{Value: ptr("new title"), Set: true},
 	}
 
-	got, err := service.PatchTask(context.Background(), 1, patch)
+	got, err := service.PatchTask(context.Background(), 1, 1, patch)
 	if err != nil {
 		t.Fatalf("PatchTask() error = %v, want nil", err)
 	}
@@ -137,7 +141,7 @@ func TestPatchTask_Conflict(t *testing.T) {
 		Title: domain.Nullable[string]{Value: ptr("new title"), Set: true},
 	}
 
-	_, err := service.PatchTask(context.Background(), 1, patch)
+	_, err := service.PatchTask(context.Background(), 1, 1, patch)
 
 	if !errors.Is(err, core_errors.ErrConflict) {
 		t.Errorf("PatchTask() error = %v, want %v", err, core_errors.ErrConflict)
@@ -155,5 +159,41 @@ func TestGetTasks_NegativeLimit(t *testing.T) {
 	}
 	if repo.getTasksCalled {
 		t.Errorf("repository GetTasks was called, want not called")
+	}
+}
+
+func TestPatchTask_OtherUsersTask(t *testing.T) {
+	repo := &fakeTasksRepository{
+		getTaskResult: existingTask(),
+	}
+	service := tasks_service.NewTasksService(repo)
+
+	patch := domain.TaskPatch{
+		Title: domain.Nullable[string]{Value: ptr("new title"), Set: true},
+	}
+
+	_, err := service.PatchTask(context.Background(), 2, 1, patch)
+
+	if !errors.Is(err, core_errors.ErrNotFound) {
+		t.Errorf("PatchTask() error = %v, want %v", err, core_errors.ErrNotFound)
+	}
+	if repo.patchTaskCalled {
+		t.Errorf("repository PatchTask was called for other user's task, want not called")
+	}
+}
+
+func TestDeleteTask_OtherUsersTask(t *testing.T) {
+	repo := &fakeTasksRepository{
+		getTaskResult: existingTask(),
+	}
+	service := tasks_service.NewTasksService(repo)
+
+	err := service.DeleteTask(context.Background(), 2, 1)
+
+	if !errors.Is(err, core_errors.ErrNotFound) {
+		t.Errorf("DeleteTask() error = %v, want %v", err, core_errors.ErrNotFound)
+	}
+	if repo.deleteTaskCalled {
+		t.Errorf("repository DeleteTask was called for other user's task, want not called")
 	}
 }

@@ -25,14 +25,17 @@ type TasksService interface {
 	) ([]domain.Task, error)
 	GetTask(
 		ctx context.Context,
+		userID int,
 		id int,
 	) (domain.Task, error)
 	DeleteTask(
 		ctx context.Context,
+		userID int,
 		id int,
 	) error
 	PatchTask(
 		ctx context.Context,
+		userID int,
 		id int,
 		patch domain.TaskPatch,
 	) (domain.Task, error)

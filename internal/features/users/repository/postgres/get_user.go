@@ -18,7 +18,7 @@ func (r *UsersRepository) GetUser(
 	defer cancel()
 
 	query := `
-	SELECT id, version, full_name, phone_number
+	SELECT id, version, full_name, phone_number, email
 	FROM todoapp.users
 	WHERE id=$1
 	`
@@ -32,6 +32,7 @@ func (r *UsersRepository) GetUser(
 		&userModel.Version,
 		&userModel.FullName,
 		&userModel.PhoneNumber,
+		&userModel.Email,
 	)
 	if err != nil {
 		if errors.Is(err, core_postgres_pool.ErrNoRows) {
@@ -49,6 +50,8 @@ func (r *UsersRepository) GetUser(
 		userModel.Version,
 		userModel.FullName,
 		userModel.PhoneNumber,
+		userModel.Email,
+		userModel.PasswordHash,
 	)
 
 	return userDomain, nil

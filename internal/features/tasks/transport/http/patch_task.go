@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
+	core_auth "github.com/cdlinkin/LevelUp/internal/core/auth"
 	"github.com/cdlinkin/LevelUp/internal/core/domain"
+	core_errors "github.com/cdlinkin/LevelUp/internal/core/errors"
 	core_logger "github.com/cdlinkin/LevelUp/internal/core/logger"
 	core_http_request "github.com/cdlinkin/LevelUp/internal/core/transport/http/request"
 	core_http_response "github.com/cdlinkin/LevelUp/internal/core/transport/http/response"
@@ -42,16 +44,16 @@ func (r *PatchTaskRequest) Validate() error {
 }
 
 type PatchTaskRequest struct {
-	Title       core_http_types.Nullable[string] `json:"title"`
-	Description core_http_types.Nullable[string] `json:"description"`
-	Completed   core_http_types.Nullable[bool]   `json:"completed"`
+	Title       core_http_types.Nullable[string] `json:"title" swaggertype:"string" example:"to go outside"`
+	Description core_http_types.Nullable[string] `json:"description" swaggertype:"string" example:"to walk 100 km"`
+	Completed   core_http_types.Nullable[bool]   `json:"completed" swaggertype:"boolean" example:"true"`
 }
 
 type PatchTaskResponse TaskDTOResponse
 
 // PatchTask godoc
 // @Summary Обновить задачу
-// @Description Обновляет информацию об уже существующей в системе задаче
+// @Description Обновляет задачу текущего пользователя. Чужая задача возвращает 404.
 // @Description ### Логика обновления полей (Three-state logic):
 // @Description 1. **Поле не передано**: `description` игнорируется, значение в БД не меняется
 // @Description 2. **Явно передано значение**: `"description": "Утром в 06:30 выйти на прогулку с Бобиком"`
@@ -60,10 +62,12 @@ type PatchTaskResponse TaskDTOResponse
 // @Tags tasks
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID изменяемой задачи"
 // @Param request body PatchTaskRequest true "PatchTask тело запроса"
 // @Success 200 {object} PatchTaskResponse "Успешно изменённая задача"
 // @Failure 400 {object} core_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_http_response.ErrorResponse "Unauthorized"
 // @Failure 404 {object} core_http_response.ErrorResponse "Task not found"
 // @Failure 409 {object} core_http_response.ErrorResponse "Conflict"
 // @Failure 500 {object} core_http_response.ErrorResponse "Internal server error"
@@ -94,8 +98,15 @@ func (h *TasksHTTPHandler) PatchTask(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	taskPatch := taskPatchFromRequest(request)
-
-	taskDomain, err := h.tasksService.PatchTask(ctx, taskID, taskPatch)
+	userID, ok := core_auth.UserIDFromContext(ctx)
+	if !ok {
+		responseHandler.ErrorResponse(
+			core_errors.ErrUnauthorized,
+			"failed to get user from context",
+		)
+		return
+	}
+	taskDomain, err := h.tasksService.PatchTask(ctx, userID, taskID, taskPatch)
 	if err != nil {
 		responseHandler.ErrorResponse(
 			err,

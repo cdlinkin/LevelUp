@@ -5,15 +5,25 @@ import (
 	"fmt"
 
 	"github.com/cdlinkin/LevelUp/internal/core/domain"
+	core_errors "github.com/cdlinkin/LevelUp/internal/core/errors"
 )
 
 func (s *TasksService) GetTask(
 	ctx context.Context,
+	userID int,
 	id int,
 ) (domain.Task, error) {
 	task, err := s.tasksRepository.GetTask(ctx, id)
 	if err != nil {
 		return domain.Task{}, fmt.Errorf("get task from repository: %w", err)
+	}
+
+	if task.AuthorUserID != userID {
+		return domain.Task{}, fmt.Errorf(
+			"task with id=%d: %w",
+			id,
+			core_errors.ErrNotFound,
+		)
 	}
 
 	return task, nil

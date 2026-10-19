@@ -2,17 +2,22 @@ package domain
 
 import (
 	"fmt"
+	"net/mail"
 	"regexp"
+	"strings"
 
 	core_errors "github.com/cdlinkin/LevelUp/internal/core/errors"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
 	ID      int
 	Version int
 
-	FullName    string
-	PhoneNumber *string
+	FullName     string
+	PhoneNumber  *string
+	Email        string
+	PasswordHash string
 }
 
 func NewUser(
@@ -20,28 +25,89 @@ func NewUser(
 	version int,
 	fullName string,
 	phoneNumber *string,
+	email string,
+	passwordHash string,
 ) User {
 	return User{
-		ID:          id,
-		Version:     version,
-		FullName:    fullName,
-		PhoneNumber: phoneNumber,
+		ID:           id,
+		Version:      version,
+		FullName:     fullName,
+		PhoneNumber:  phoneNumber,
+		Email:        email,
+		PasswordHash: passwordHash,
 	}
 }
 
 func NewUserUninitialized(
 	fullName string,
 	phoneNumber *string,
+	email string,
+	passwordHash string,
 ) User {
 	return NewUser(
 		UninitializedID,
 		UninitializedVersion,
 		fullName,
 		phoneNumber,
+		email,
+		passwordHash,
 	)
 }
 
+func NormalizeEmail(email string) string {
+	email = strings.TrimSpace(email)
+	email = strings.ToLower(email)
+	return email
+}
+
+func HashPassword(password string) (string, error) {
+	if len(password) < 8 || len(password) > 72 {
+		return "", fmt.Errorf(
+			"invalid `password` len: %d: %w",
+			len(password),
+			core_errors.ErrInvalidArgument,
+		)
+	}
+
+	hashPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", fmt.Errorf("generate from password: %w", err)
+	}
+
+	return string(hashPassword), nil
+}
+
+func (u *User) CheckPassword(password string) bool {
+	if err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password)); err != nil {
+		return false
+	}
+	return true
+}
+
 func (u *User) Validate() error {
+	if len(u.Email) > 250 {
+		return fmt.Errorf(
+			"invalid 'email' len=%d: %w",
+			len(u.Email),
+			core_errors.ErrInvalidArgument,
+		)
+	}
+	parsedAddres, err := mail.ParseAddress(u.Email)
+	email := NormalizeEmail(u.Email)
+	if err != nil {
+		return fmt.Errorf(
+			"invalid `email` parse address: %w: %w",
+			err,
+			core_errors.ErrInvalidArgument,
+		)
+	}
+	if parsedAddres.Address != email {
+		return fmt.Errorf(
+			"parsed address email: %w",
+			core_errors.ErrInvalidArgument,
+		)
+	}
+
 	fullNameLen := len([]rune(u.FullName))
 	if fullNameLen < 3 || fullNameLen > 100 {
 		return fmt.Errorf(

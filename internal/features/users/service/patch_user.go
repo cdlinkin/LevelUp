@@ -5,9 +5,18 @@ import (
 	"fmt"
 
 	"github.com/cdlinkin/LevelUp/internal/core/domain"
+	core_errors "github.com/cdlinkin/LevelUp/internal/core/errors"
 )
 
-func (s *UsersService) PatchUser(ctx context.Context, id int, patch domain.UserPatch) (domain.User, error) {
+func (s *UsersService) PatchUser(ctx context.Context, userID int, id int, patch domain.UserPatch) (domain.User, error) {
+	if userID != id {
+		return domain.User{}, fmt.Errorf(
+			"user %d cannot modify user %d: %w",
+			userID,
+			id,
+			core_errors.ErrForbidden,
+		)
+	}
 	user, err := s.usersRepository.GetUser(ctx, id)
 	if err != nil {
 		return domain.User{}, fmt.Errorf("get user: %w", err)

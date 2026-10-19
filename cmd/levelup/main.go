@@ -8,11 +8,14 @@ import (
 	"syscall"
 	"time"
 
+	core_auth "github.com/cdlinkin/LevelUp/internal/core/auth"
 	core_config "github.com/cdlinkin/LevelUp/internal/core/config"
 	core_logger "github.com/cdlinkin/LevelUp/internal/core/logger"
 	core_pgx_pool "github.com/cdlinkin/LevelUp/internal/core/repository/postgres/pool/pgx"
 	core_http_middleware "github.com/cdlinkin/LevelUp/internal/core/transport/http/middleware"
 	core_http_server "github.com/cdlinkin/LevelUp/internal/core/transport/http/server"
+	auth_service "github.com/cdlinkin/LevelUp/internal/features/auth/service"
+	auth_transport_http "github.com/cdlinkin/LevelUp/internal/features/auth/transport/http"
 	statistics_postgres_repository "github.com/cdlinkin/LevelUp/internal/features/statistics/repository/postgres"
 	statistics_service "github.com/cdlinkin/LevelUp/internal/features/statistics/service"
 	statistics_transport_http "github.com/cdlinkin/LevelUp/internal/features/statistics/transport/http"
@@ -35,6 +38,11 @@ import (
 // @description 	Todo Application REST-API scheme
 // @host 			127.0.0.1:5050
 // @BasePath 		/api/v1
+//
+// @securityDefinitions.apikey	BearerAuth
+// @in							header
+// @name						Authorization
+// @description					JWT access token из POST /auth/login. Формат: `Bearer <access_token>`
 func main() {
 	cfg := core_config.NewConfigMust()
 	time.Local = cfg.TimeZone
@@ -84,6 +92,12 @@ func main() {
 	webService := web_service.NewWebService(webRepository)
 	webTransportHTTP := web_transport_http.NewWebHTTPHandler(webService)
 
+	logger.Debug("initializing feature", zap.String("feature", "auth"))
+	tokenManager := core_auth.NewTokenManager(core_auth.NewConfigMust())
+	authMiddleware := core_http_middleware.Auth(tokenManager)
+	authService := auth_service.NewAuthService(usersRepository, tokenManager)
+	authTransportHTTP := auth_transport_http.NewAuthHTTPHandler(authService, authMiddleware)
+
 	logger.Debug("initializing HTTP server")
 	httpConfig := core_http_server.NewConfigMust()
 	httpServer := core_http_server.NewHTTPServer(
@@ -96,10 +110,27 @@ func main() {
 		core_http_middleware.Panic(),
 	)
 	apiVersionRouterV1 := core_http_server.NewAPIVersionRouter(core_http_server.ApiVersion1, nil)
-	apiVersionRouterV1.RegisterRoutes(userTransportHTTP.Routes()...)
-	apiVersionRouterV1.RegisterRoutes(tasksTransportHTTP.Routes()...)
-	apiVersionRouterV1.RegisterRoutes(statisticsTransportHTTP.Routes()...)
-	apiVersionRouterV1.RegisterRoutes(webTransportHTTP.Routes()...)
+	apiVersionRouterV1.RegisterRoutes(
+		core_http_server.WithMiddleware(
+			userTransportHTTP.Routes(),
+			authMiddleware,
+		)...,
+	)
+	apiVersionRouterV1.RegisterRoutes(
+		core_http_server.WithMiddleware(
+			tasksTransportHTTP.Routes(),
+			authMiddleware,
+		)...,
+	)
+	apiVersionRouterV1.RegisterRoutes(
+		core_http_server.WithMiddleware(
+			statisticsTransportHTTP.Routes(),
+			authMiddleware,
+		)...,
+	)
+	apiVersionRouterV1.RegisterRoutes(
+		authTransportHTTP.Routes()...,
+	)
 
 	httpServer.RegisterAPIRouters(apiVersionRouterV1)
 	httpServer.RegisterRoutes(webTransportHTTP.Routes()...)

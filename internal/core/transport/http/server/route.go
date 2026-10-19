@@ -20,3 +20,14 @@ func (r *Route) WithMiddleware() http.Handler {
 		r.Middleware...,
 	)
 }
+
+func WithMiddleware(routes []Route, middleware ...core_http_middleware.Middleware) []Route {
+	protected := make([]Route, len(routes))
+
+	for i, route := range routes {
+		route.Middleware = append(route.Middleware, middleware...)
+		protected[i] = route
+	}
+
+	return protected
+}
