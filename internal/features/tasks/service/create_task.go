@@ -20,5 +20,7 @@ func (s *TasksService) CreateTask(
 		return domain.Task{}, fmt.Errorf("create task: %w", err)
 	}
 
+	s.invalidateStatistics(ctx, task.AuthorUserID)
+
 	return task, nil
 }

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	core_auth "github.com/cdlinkin/LevelUp/internal/core/auth"
+	core_redis_cache "github.com/cdlinkin/LevelUp/internal/core/cache/redis"
 	core_config "github.com/cdlinkin/LevelUp/internal/core/config"
 	core_logger "github.com/cdlinkin/LevelUp/internal/core/logger"
 	core_pgx_pool "github.com/cdlinkin/LevelUp/internal/core/repository/postgres/pool/pgx"
@@ -72,6 +73,16 @@ func main() {
 	}
 	defer pool.Close()
 
+	logger.Debug("initializing redis client")
+	statisticsCache, err := core_redis_cache.NewClient(
+		ctx,
+		core_redis_cache.NewConfigMust(),
+	)
+	if err != nil {
+		logger.Fatal("failed to init redis client", zap.Error(err))
+	}
+	defer statisticsCache.Close()
+
 	logger.Debug("initializing feature", zap.String("feature", "users"))
 	usersRepository := users_postgres_repository.NewUsersRepository(pool)
 	usersService := users_service.NewUsersService(usersRepository)
@@ -79,12 +90,12 @@ func main() {
 
 	logger.Debug("initializing feature", zap.String("feature", "tasks"))
 	tasksRepository := tasks_postgres_repository.NewTasksRepository(pool)
-	tasksService := tasks_service.NewTasksService(tasksRepository)
+	tasksService := tasks_service.NewTasksService(tasksRepository, statisticsCache)
 	tasksTransportHTTP := tasks_transport_http.NewTasksHTTPHandler(tasksService)
 
 	logger.Debug("initializing feature", zap.String("feature", "statistics"))
 	statisticsRepository := statistics_postgres_repository.NewStatisticsRepository(pool)
-	statisticsService := statistics_service.NewStatisticsService(statisticsRepository)
+	statisticsService := statistics_service.NewStatisticsService(statisticsRepository, statisticsCache)
 	statisticsTransportHTTP := statistics_transport_http.NewStatisticsHTTPHandler(statisticsService)
 
 	logger.Debug("initializing feature", zap.String("feature", "web"))

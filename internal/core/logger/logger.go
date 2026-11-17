@@ -38,6 +38,11 @@ func FromContext(ctx context.Context) *Logger {
 	return log
 }
 
+func TryFromContext(ctx context.Context) (*Logger, bool) {
+	log, ok := ctx.Value(key).(*Logger)
+	return log, ok
+}
+
 func NewLogger(config Config) (*Logger, error) {
 	zapLvl := zap.NewAtomicLevel()
 	if err := zapLvl.UnmarshalText([]byte(config.Level)); err != nil {

@@ -36,5 +36,7 @@ func (s *TasksService) PatchTask(
 		return domain.Task{}, fmt.Errorf("patch task: %w", err)
 	}
 
+	s.invalidateStatistics(ctx, userID)
+
 	return patchedTask, nil
 }

@@ -7,6 +7,8 @@ import (
 
 	"github.com/cdlinkin/LevelUp/internal/core/domain"
 	core_errors "github.com/cdlinkin/LevelUp/internal/core/errors"
+	core_logger "github.com/cdlinkin/LevelUp/internal/core/logger"
+	"go.uber.org/zap"
 )
 
 func (s *StatisticsService) GetStatistics(
@@ -21,14 +23,38 @@ func (s *StatisticsService) GetStatistics(
 		}
 	}
 
+	if userID != nil {
+		statistics, hit, err := s.statisticsCache.GetStatistics(ctx, *userID, from, to)
+		if err != nil {
+			logCacheError(ctx, "get statistics from cache", err)
+		} else if hit {
+			return statistics, nil
+		}
+	}
+
 	tasks, err := s.statisticsRepository.GetTasks(ctx, userID, from, to)
 	if err != nil {
 		return domain.Statistics{}, fmt.Errorf("get tasks from repository: %w", err)
 	}
 
-	statisticsDomain := calcStatistics(tasks)
+	statistics := calcStatistics(tasks)
 
-	return statisticsDomain, nil
+	if userID != nil {
+		if err := s.statisticsCache.SetStatistics(ctx, *userID, from, to, statistics); err != nil {
+			logCacheError(ctx, "set statistics cache", err)
+		}
+	}
+
+	return statistics, nil
+}
+
+func logCacheError(ctx context.Context, message string, err error) {
+	log, ok := core_logger.TryFromContext(ctx)
+	if !ok {
+		return
+	}
+
+	log.Error(message, zap.Error(err))
 }
 
 func calcStatistics(tasks []domain.Task) domain.Statistics {

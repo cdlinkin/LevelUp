@@ -9,13 +9,13 @@ import (
 
 func (s *UsersService) DeleteUser(
 	ctx context.Context,
-	currentUserID int,
+	userID int,
 	id int,
 ) error {
-	if currentUserID != id {
+	if userID != id {
 		return fmt.Errorf(
 			"user %d cannot modify user %d: %w",
-			currentUserID,
+			userID,
 			id,
 			core_errors.ErrForbidden,
 		)

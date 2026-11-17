@@ -9,6 +9,7 @@ import (
 
 type StatisticsService struct {
 	statisticsRepository StatisticsRepository
+	statisticsCache      StatisticsCache
 }
 
 type StatisticsRepository interface {
@@ -20,8 +21,29 @@ type StatisticsRepository interface {
 	) ([]domain.Task, error)
 }
 
-func NewStatisticsService(statisticsRepository StatisticsRepository) *StatisticsService {
+type StatisticsCache interface {
+	GetStatistics(
+		ctx context.Context,
+		userID int,
+		from *time.Time,
+		to *time.Time,
+	) (domain.Statistics, bool, error)
+
+	SetStatistics(
+		ctx context.Context,
+		userID int,
+		from *time.Time,
+		to *time.Time,
+		statistics domain.Statistics,
+	) error
+}
+
+func NewStatisticsService(
+	statisticsRepository StatisticsRepository,
+	statisticsCache StatisticsCache,
+) *StatisticsService {
 	return &StatisticsService{
 		statisticsRepository: statisticsRepository,
+		statisticsCache:      statisticsCache,
 	}
 }
