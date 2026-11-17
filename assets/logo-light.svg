@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" width="280" height="64" role="img" aria-label="LevelUp">
+  <style>
+    .bar { fill: #1c1c1e; }
+    .hot { fill: #ff4b3e; }
+    .name { font-family: "Segoe UI", Inter, Helvetica, Arial, sans-serif; font-size: 32px; letter-spacing: -1.4px; }
+  </style>
+  <rect class="bar" x="4" y="34" width="8" height="18" rx="2"/>
+  <rect class="bar" x="16" y="24" width="8" height="28" rx="2"/>
+  <rect class="hot" x="28" y="14" width="8" height="38" rx="2"/>
+  <path fill="none" stroke="#ff4b3e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M26 12 L32 5 L38 12"/>
+  <text class="name" x="50" y="44">
+    <tspan fill="#1c1c1e" font-weight="700">Level</tspan><tspan class="hot" font-weight="700">Up</tspan>
+  </text>
+</svg>
