@@ -19,6 +19,9 @@ services:
       - LOGGER_FOLDER=/app/out/logs
       - AUTH_JWT_SECRET=${AUTH_JWT_SECRET}
       - AUTH_TOKEN_TTL=${AUTH_TOKEN_TTL}
+      - REDIS_ADDR=todoapp-redis:6379
+      - REDIS_TIMEOUT=${REDIS_TIMEOUT}
+      - REDIS_TTL=${REDIS_TTL}
     volumes:
       - ${PROJECT_ROOT}/out/logs:/app/out/logs
     ports:
@@ -36,7 +39,12 @@ services:
       - ${PROJECT_ROOT}/out/pgdata:/var/lib/postgresql
     restart: always
 
-
+  todoapp-redis:
+    image: redis:7.4-alpine
+    container_name: todoapp-env-redis
+    ports:
+      - "127.0.0.1:6379:6379"
+    restart: always
 
   todoapp-postgres-migrate:
     image: migrate/migrate:v4.19.1

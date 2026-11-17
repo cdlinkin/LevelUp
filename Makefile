@@ -14,8 +14,8 @@ export PROJECT_ROOT := $(CURDIR)
 
 help:
 	@echo Environment:
-	@echo   env-up             start postgres container
-	@echo   env-down           stop postgres container
+	@echo   env-up             start postgres and redis containers
+	@echo   env-down           stop postgres and redis containers
 	@echo   env-port-forward   expose postgres on 127.0.0.1:9998
 	@echo   env-port-close     stop port forwarder
 	@echo   env-cleanup        stop containers and DELETE database files
@@ -38,13 +38,13 @@ help:
 	@echo   ps                 list project containers
 
 env-up:
-	docker compose up -d todoapp-postgres port-forwarder
+	docker compose up -d todoapp-postgres todoapp-redis port-forwarder
 
 env-down:
-	docker compose down todoapp-postgres
+	docker compose down todoapp-postgres todoapp-redis
 
 env-cleanup:
-	docker compose down todoapp-postgres port-forwarder
+	docker compose down todoapp-postgres todoapp-redis port-forwarder
 	powershell -NoProfile -Command "if (Test-Path '$(PROJECT_ROOT)/out/pgdata') { Remove-Item -Recurse -Force '$(PROJECT_ROOT)/out/pgdata' }"
 	@echo Environment files cleaned
 
@@ -78,6 +78,7 @@ endif
 
 levelup-run:
 	set POSTGRES_HOST=localhost&& \
+	set REDIS_ADDR=localhost:6379&& \
 	set LOGGER_FOLDER=./out/logs&& \
 	go run ./cmd/levelup
 

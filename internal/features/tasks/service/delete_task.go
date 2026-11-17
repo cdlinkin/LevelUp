@@ -18,5 +18,7 @@ func (s *TasksService) DeleteTask(
 		return fmt.Errorf("delete task from repository: %w", err)
 	}
 
+	s.invalidateStatistics(ctx, userID)
+
 	return nil
 }
